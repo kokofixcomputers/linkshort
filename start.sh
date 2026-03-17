@@ -28,7 +28,7 @@ BACKEND_PID=$!
 
 # Start frontend
 cd "../frontend"
-npm run dev &
+npx vite build &
 FRONTEND_PID=$!
 
 # Trap to kill both on exit
