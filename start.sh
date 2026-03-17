@@ -11,7 +11,7 @@ pip install -r requirements.txt --break-system-packages -q
 # Install Node dependencies
 echo "[2/3] Installing Node dependencies..."
 cd "../frontend"
-npm install --legacy-peer-deps
+pnpm install
 
 echo "[3/3] Starting servers..."
 echo ""
@@ -28,7 +28,7 @@ BACKEND_PID=$!
 
 # Start frontend
 cd "../frontend"
-npm run dev &
+npx vite build &
 FRONTEND_PID=$!
 
 # Trap to kill both on exit

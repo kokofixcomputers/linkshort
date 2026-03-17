@@ -13,7 +13,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-Then open http://localhost:5173
+Then open http://localhost:8003
 
 **Default credentials:** `admin` / `admin`
 
@@ -24,14 +24,14 @@ Then open http://localhost:5173
 cd backend
 pip install -r requirements.txt
 python app.py
-# Runs on http://localhost:5000
+# Runs on http://localhost:8003
 ```
 
 ### Frontend
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+npx vite build
 # Runs on http://localhost:5173
 ```
 
