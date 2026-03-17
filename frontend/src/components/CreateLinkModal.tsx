@@ -7,6 +7,7 @@ import {
   Lock, Timer, Link2, ChevronUp, Download
 } from 'lucide-react'
 import './CreateLinkModal.css'
+import { useSlugModel } from './useSlugModel'
 
 interface Props {
   domains: Domain[]
@@ -53,6 +54,8 @@ export default function CreateLinkModal({ domains, editLink, onClose, onSaved }:
   const domainRef = useRef<HTMLDivElement>(null)
   const domainBtnRef = useRef<HTMLButtonElement>(null)
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  const { suggestSlug, loading: aiLoading } = useSlugModel()
 
   useLayoutEffect(() => {
     if (showDomainDrop && domainBtnRef.current) {
@@ -160,11 +163,38 @@ export default function CreateLinkModal({ domains, editLink, onClose, onSaved }:
               <div className="form-label-row">
                 <label className="form-label">Short Link</label>
                 <div className="form-label-actions">
-                  <button className="icon-btn-sm" title="Randomize" onClick={() => setShortCode(generateCode())}>
+                  <button
+                    className="icon-btn-sm"
+                    title="Randomize"
+                    onClick={() => {
+                      const code = generateCode()
+                      const err = validateShortCode(code, selectedDomain)
+                      setError(err || '')
+                      setShortCode(code)
+                    }}
+                  >
                     <Shuffle size={13} />
                   </button>
-                  <button className="icon-btn-sm" title="AI generate">
-                    <Star size={13} />
+                  <button
+                    className="icon-btn-sm"
+                    title="AI generate"
+                    disabled={!destUrl || aiLoading}
+                    onClick={async () => {
+                      try {
+                        setError('')
+                        const slug = await suggestSlug(destUrl)
+                        const err = validateShortCode(slug, selectedDomain)
+                        if (err) {
+                          setError(err)
+                        } else {
+                          setShortCode(slug)
+                        }
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'AI generate failed')
+                      }
+                    }}
+                  >
+                    {aiLoading ? <span className="btn-spinner-dark" /> : <Star size={13} />}
                   </button>
                 </div>
               </div>
@@ -295,8 +325,6 @@ export default function CreateLinkModal({ domains, editLink, onClose, onSaved }:
                 )}
               </div>
             </div>
-
-
           </div>
         </div>
 
@@ -365,6 +393,7 @@ export default function CreateLinkModal({ domains, editLink, onClose, onSaved }:
             {saving ? <span className="btn-spinner-dark" /> : <>{editLink ? 'Save changes' : 'Create link'} <kbd>↵</kbd></>}
           </button>
         </div>
+
         {/* Domain dropdown portal */}
         {showDomainDrop && dropPos && (
           <div

@@ -1,0 +1,377 @@
+/* ============================================
+   QR Code Design Modal — Dub.co-inspired style
+   ============================================ */
+
+.qr-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: qrModalFade 0.2s ease-out;
+}
+
+@keyframes qrModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qr-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: qrModalSlide 0.3s ease-out;
+}
+
+@keyframes qrModalSlide {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+.qr-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.qr-modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.qr-modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.qr-modal-close:hover {
+  background: #e8e8e8;
+  color: #0a0a0a;
+}
+
+.qr-modal-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── QR Code Preview Section ── */
+.qr-preview-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.qr-preview-container {
+  position: relative;
+}
+
+.qr-code-preview {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.qr-placeholder {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.3;
+  user-select: none;
+}
+
+.qr-logo-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.qr-logo-icon {
+  font-size: 20px;
+}
+
+.qr-link-info {
+  text-align: center;
+}
+
+.qr-link-url {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  font-family: 'Geist Mono', monospace;
+  background: #f5f5f5;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.qr-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #0a0a0a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.qr-download-btn:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+/* ── Options Section ── */
+.qr-options-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.qr-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qr-option-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.qr-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.qr-toggle {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 99px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.qr-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.qr-toggle:checked {
+  background: #0a0a0a;
+}
+
+.qr-toggle:checked::after {
+  transform: translateX(20px);
+}
+
+.qr-toggle-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+.qr-color-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+/* ── Color Selection ── */
+.qr-color-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qr-color-preset {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.qr-color-preset:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.qr-color-preset.active {
+  border-color: #0a0a0a;
+}
+
+.qr-color-preset.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.qr-custom-color {
+  margin-top: 8px;
+}
+
+.qr-color-input {
+  width: 100%;
+  height: 36px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: 'Geist Mono', monospace;
+  color: #0a0a0a;
+  transition: all 0.15s;
+}
+
+.qr-color-input:focus {
+  outline: none;
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
+}
+
+.qr-color-input::placeholder {
+  color: #bbb;
+}
+
+/* ── Footer ── */
+.qr-modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.qr-btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.qr-btn-secondary {
+  background: white;
+  color: #666;
+  border: 1.5px solid #e0e0e0;
+}
+
+.qr-btn-secondary:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+  color: #0a0a0a;
+}
+
+.qr-btn-primary {
+  background: #0a0a0a;
+  color: white;
+}
+
+.qr-btn-primary:hover {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .qr-modal {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .qr-modal-content {
+    padding: 20px;
+  }
+  
+  .qr-code-preview {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .qr-color-presets {
+    gap: 6px;
+  }
+  
+  .qr-color-preset {
+    width: 28px;
+    height: 28px;
+  }
+}

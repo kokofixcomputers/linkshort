@@ -1,13 +1,13 @@
-.login-root {
-  min-height: 100vh;
-  background: var(--bg);
+.signup-root {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 20px;
 }
 
-.login-card {
+.signup-card {
   width: 100%;
   max-width: 360px;
   background: var(--surface);
@@ -17,14 +17,14 @@
   box-shadow: var(--shadow);
 }
 
-.login-logo {
+.signup-logo {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 28px;
 }
 
-.login-logo-mark {
+.signup-logo-mark {
   width: 32px;
   height: 32px;
   background: var(--accent);
@@ -35,48 +35,49 @@
   color: white;
 }
 
-.login-logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.login-header {
-  margin-bottom: 24px;
-}
-
-.login-header h1 {
+.signup-logo-text {
   font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.signup-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.signup-header h1 {
+  font-size: 24px;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  margin-bottom: 4px;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
 }
 
-.login-header p {
-  font-size: 13.5px;
+.signup-header p {
+  font-size: 14px;
   color: var(--text-muted);
+  margin: 0;
 }
 
-.login-form {
+.signup-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .field-input {
-  width: 100%;
   height: 44px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -93,45 +94,46 @@
   box-shadow: 0 0 0 2px rgba(10, 10, 10, 0.1);
 }
 
-.field-input::placeholder {
-  color: var(--text-muted);
-}
-
 .field-password {
   position: relative;
 }
 
 .field-password .field-input {
-  padding-right: 38px;
+  padding-right: 42px;
 }
 
 .pw-toggle {
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  padding: 2px;
+  justify-content: center;
 }
 
 .pw-toggle:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
-.login-error {
+.signup-error {
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
   font-size: 13px;
   color: #ef4444;
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
+  margin: -8px 0;
 }
 
-.login-btn {
+.signup-btn {
   width: 100%;
   height: 44px;
   background: var(--accent);
@@ -148,47 +150,65 @@
   gap: 8px;
 }
 
-.login-btn:hover:not(:disabled) {
+.signup-btn:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(10, 10, 10, 0.2);
 }
 
-.login-btn:disabled {
+.signup-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
+  animation: spin 0.6s linear infinite;
 }
 
-.login-footer {
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.signup-footer {
   text-align: center;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-primary);
 }
 
-.login-footer p {
+.signup-footer p {
   font-size: 14px;
   color: var(--text-muted);
   margin: 0;
 }
 
-.login-footer a {
-  color: var(--accent);
+.signup-footer a {
+  color: var(--accent-primary);
   text-decoration: none;
   font-weight: 500;
 }
 
-.login-footer a:hover {
+.signup-footer a:hover {
   text-decoration: underline;
+}
+
+.animate-fade {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

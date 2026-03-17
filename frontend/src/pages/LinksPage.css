@@ -60,6 +60,40 @@
 .toolbar-left {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.view-switcher {
+  display: flex;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-btn:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
+.view-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 .toolbar-right {
@@ -204,6 +238,12 @@
   background: var(--border);
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.link-user {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .link-age {

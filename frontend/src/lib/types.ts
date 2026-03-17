@@ -13,6 +13,7 @@ export interface Link {
   utm_term: string
   utm_content: string
   user_id: number
+  username?: string
   created_at: string
   click_count: number
 }

@@ -1,0 +1,431 @@
+/* ============================================
+   SettingsPage — Dub.co-inspired style
+   ============================================ */
+
+.settings-page {
+  padding: 40px 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  animation: settingsFade 0.5s ease-out both;
+}
+
+@keyframes settingsFade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+.settings-header {
+  margin-bottom: 36px;
+}
+
+.settings-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  color: #0a0a0a;
+}
+
+.settings-title h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.settings-subtitle {
+  color: #888;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ── Sections ── */
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-section {
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  color: #0a0a0a;
+}
+
+.section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.section-content {
+  padding: 20px;
+}
+
+/* ── Setting Item ── */
+.setting-item {
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+  cursor: pointer;
+}
+
+/* Custom toggle-style checkbox */
+.setting-checkbox {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 99px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.setting-checkbox::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.setting-checkbox:checked {
+  background: #0a0a0a;
+}
+
+.setting-checkbox:checked::after {
+  transform: translateX(16px);
+}
+
+.setting-description {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+  margin-left: 46px;
+}
+
+/* ── Public access info badge ── */
+.public-access-info {
+  background: #f5fef7;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.public-access-info p {
+  font-size: 13px;
+  color: #15803d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Buttons (pill style) ── */
+.save-settings-btn {
+  background: #0a0a0a;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 4px;
+}
+
+.save-settings-btn:hover:not(:disabled) {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.save-settings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Users section ── */
+.users-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.users-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin: 0;
+}
+
+.add-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0a0a0a;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.add-user-btn:hover {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+/* ── Signup form ── */
+.signup-form {
+  background: #fafafa;
+  border: 1.5px solid #ebebeb;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.signup-form h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-input {
+  flex: 1;
+  background: white;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #0a0a0a;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.form-input::placeholder {
+  color: #bbb;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 3px rgba(10,10,10,0.06);
+}
+
+.create-user-btn {
+  background: #0a0a0a;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+
+.create-user-btn:hover {
+  background: #333;
+}
+
+.cancel-btn {
+  background: white;
+  color: #555;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+
+.cancel-btn:hover {
+  border-color: #bbb;
+  color: #0a0a0a;
+}
+
+.error-message {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.success-message {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #16a34a;
+}
+
+/* ── Users list ── */
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #fafafa;
+  border: 1.5px solid #f0f0f0;
+  border-radius: 10px;
+  transition: border-color 0.15s;
+}
+
+.user-item:hover {
+  border-color: #e0e0e0;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.admin-badge {
+  color: #0a0a0a;
+  opacity: 0.5;
+}
+
+.user-meta {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+.user-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.delete-user-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 99px;
+  color: #bbb;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.delete-user-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .settings-page {
+    padding: 24px 16px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .user-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .user-actions {
+    align-self: flex-end;
+  }
+}

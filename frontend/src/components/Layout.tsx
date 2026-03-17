@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../App'
 import { api } from '../lib/api'
-import { Link2, BarChart2, Globe, LogOut } from 'lucide-react'
+import { Link2, BarChart2, Globe, Settings, LogOut } from 'lucide-react'
 import './Layout.css'
 
 export default function Layout() {
@@ -25,18 +25,24 @@ export default function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-          <NavLink to="/links" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink to="/app/links" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Link2 size={15} />
             <span>Links</span>
           </NavLink>
-          <NavLink to="/analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink to="/app/analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <BarChart2 size={15} />
             <span>Analytics</span>
           </NavLink>
-          <NavLink to="/domains" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink to="/app/domains" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Globe size={15} />
             <span>Domains</span>
           </NavLink>
+          {user?.is_admin && (
+            <NavLink to="/app/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Settings size={15} />
+              <span>Settings</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="sidebar-footer">

@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { useAuth } from '../App'
 import { Link2, Eye, EyeOff } from 'lucide-react'
-import './LoginPage.css'
+import './SignupPage.css'
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { setUser } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,32 +17,31 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const data = await api.login(username, password)
-      setUser({ username: data.username, id: data.id || 1, is_admin: data.is_admin })
-      navigate('/app/links')
-    } catch {
-      setError('Invalid username or password')
+      await api.signup(username, password)
+      navigate('/login')
+    } catch (error: any) {
+      setError(error.message || 'Signup failed')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="login-root">
-      <div className="login-card animate-fade">
-        <div className="login-logo">
-          <div className="login-logo-mark">
+    <div className="signup-root">
+      <div className="signup-card animate-fade">
+        <div className="signup-logo">
+          <div className="signup-logo-mark">
             <Link2 size={18} strokeWidth={2.5} />
           </div>
-          <span className="login-logo-text">LinkShort</span>
+          <span className="signup-logo-text">LinkShort</span>
         </div>
 
-        <div className="login-header">
-          <h1>Welcome back</h1>
-          <p>Sign in to your account</p>
+        <div className="signup-header">
+          <h1>Create account</h1>
+          <p>Sign up to start creating short links</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="signup-form" onSubmit={handleSubmit}>
           <div className="field-group">
             <label className="field-label">Username</label>
             <input
@@ -52,9 +49,10 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="admin"
+              placeholder="Choose a username"
               autoFocus
               required
+              minLength={3}
             />
           </div>
 
@@ -66,7 +64,7 @@ export default function LoginPage() {
                 type={showPw ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Choose a password"
                 required
               />
               <button type="button" className="pw-toggle" onClick={() => setShowPw(v => !v)}>
@@ -75,16 +73,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="signup-error">{error}</div>}
 
-          <button className="login-btn" type="submit" disabled={loading}>
-            {loading ? <span className="btn-spinner" /> : 'Sign in'}
+          <button className="signup-btn" type="submit" disabled={loading}>
+            {loading ? <span className="btn-spinner" /> : 'Create Account'}
           </button>
         </form>
 
-        <div className="login-footer">
+        <div className="signup-footer">
           <p>
-            Don't have an account? <a href="/signup">Sign up</a>
+            Already have an account? <a href="/login">Sign in</a>
           </p>
         </div>
       </div>

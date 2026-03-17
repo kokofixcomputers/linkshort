@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../lib/api'
+import { useAuth } from '../App'
 import { Link, Domain } from '../lib/types'
 import { QRCodeSVG } from 'qrcode.react'
 import {
   Plus, Copy, Check, MoreHorizontal, Trash2, Edit2,
   ExternalLink, Search, SlidersHorizontal, ChevronDown,
-  MousePointerClick, Lock, Globe, QrCode, X, Download
+  MousePointerClick, Lock, Globe, QrCode, X, Download, Users
 } from 'lucide-react'
 import CreateLinkModal from '../components/CreateLinkModal'
 import './LinksPage.css'
@@ -64,6 +65,7 @@ function FaviconIcon({ url }: { url: string }) {
 }
 
 export default function LinksPage() {
+  const { user } = useAuth()
   const [links, setLinks] = useState<Link[]>([])
   const [domains, setDomains] = useState<Domain[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,20 +75,22 @@ export default function LinksPage() {
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [openMenu, setOpenMenu] = useState<number | null>(null)
   const [qrLink, setQrLink] = useState<Link | null>(null)
+  const [qrSettings, setQrSettings] = useState<{ logo: boolean; color: string; logoUrl?: string }>({ logo: false, color: '#000000' })
   const [showFilterDrop, setShowFilterDrop] = useState(false)
   const [showDisplayDrop, setShowDisplayDrop] = useState(false)
   const [filters, setFilters] = useState<Filters>({ domain: '', passwordOnly: false, expiryOnly: false })
   const [display, setDisplay] = useState<Display>({ sort: 'newest', showDest: true })
+  const [view, setView] = useState<'own' | 'all'>('own')
   const filterRef = useRef<HTMLDivElement>(null)
   const displayRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [l, d] = await Promise.all([api.getLinks(), api.getDomains()])
+    const [l, d] = await Promise.all([api.getLinks(view), api.getDomains()])
     setLinks(l)
     setDomains(d)
     setLoading(false)
-  }, [])
+  }, [view])
 
   useEffect(() => { load() }, [load])
 
@@ -106,10 +110,25 @@ export default function LinksPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this link?')) return
-    await api.deleteLink(id)
-    setLinks(prev => prev.filter(l => l.id !== id))
-    setOpenMenu(null)
+    if (!confirm('Are you sure you want to delete this link and all its click data?')) return
+    try {
+      await api.deleteLink(id)
+      setLinks(links.filter(l => l.id !== id))
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete link')
+    }
+  }
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = event.target?.result as string
+      setQrSettings({ ...qrSettings, logoUrl: result })
+    }
+    reader.readAsDataURL(file)
   }
 
   const uniqueDomains = [...new Set(links.map(l => l.domain))]
@@ -144,6 +163,24 @@ export default function LinksPage() {
 
       <div className="page-toolbar">
         <div className="toolbar-left">
+          {user?.is_admin && (
+            <div className="view-switcher">
+              <button
+                className={`view-btn ${view === 'own' ? 'active' : ''}`}
+                onClick={() => setView('own')}
+              >
+                <Users size={13} />
+                My Links
+              </button>
+              <button
+                className={`view-btn ${view === 'all' ? 'active' : ''}`}
+                onClick={() => setView('all')}
+              >
+                <Users size={13} />
+                All Users
+              </button>
+            </div>
+          )}
           <div className="toolbar-drop-wrap" ref={filterRef}>
             <button
               className={`btn-filter ${filterActive ? 'btn-filter-active' : ''}`}
@@ -279,7 +316,7 @@ export default function LinksPage() {
                   >
                     {copiedId === link.id ? <Check size={13} color="var(--accent-green)" /> : <Copy size={13} />}
                   </button>
-                  {link.password && <Lock size={11} className="link-lock" title="Password protected" />}
+                  {link.password && <Lock size={11} className="link-lock" />}
                 </div>
                 <div className="link-dest">
                   <span className="link-arrow">↳</span>
@@ -287,6 +324,12 @@ export default function LinksPage() {
                     ? <span className="link-url">{link.destination_url || 'No URL configured'}</span>
                     : <span className="link-url" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>destination hidden</span>
                   }
+                  {link.username && view === 'all' && (
+                    <>
+                      <span className="link-dot" />
+                      <span className="link-user">{link.username}</span>
+                    </>
+                  )}
                   <span className="link-dot" />
                   <span className="link-age">{timeAgo(link.created_at)}</span>
                 </div>
@@ -340,42 +383,412 @@ export default function LinksPage() {
 
       {qrLink && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(2px)' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}
           onClick={() => setQrLink(null)}
         >
           <div
-            style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: 24, width: 280, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, animation: 'fadeIn 0.15s ease' }}
+            style={{ 
+              background: 'white', 
+              borderRadius: '16px', 
+              width: '90%', 
+              maxWidth: '520px', 
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+              display: 'flex', 
+              flexDirection: 'column',
+              animation: 'qrModalSlide 0.3s ease-out'
+            }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 210 }}>
-                {qrLink.domain}/{qrLink.short_code}
-              </span>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', cursor: 'pointer' }} onClick={() => setQrLink(null)}>
-                <X size={15} />
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#0a0a0a', margin: 0, letterSpacing: '-0.02em' }}>QR Code Design</h2>
+              <button 
+                style={{ 
+                  width: '32px', 
+                  height: '32px', 
+                  border: 'none', 
+                  background: '#f5f5f5', 
+                  borderRadius: '8px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  cursor: 'pointer', 
+                  color: '#666',
+                  transition: 'all 0.15s'
+                }}
+                onClick={() => setQrLink(null)}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#0a0a0a' }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.color = '#666' }}
+              >
+                <X size={20} />
               </button>
             </div>
-            <QRCodeSVG
-              id="qr-modal-svg"
-              value={`http://${qrLink.domain}/${qrLink.short_code}`}
-              size={180}
-              bgColor="transparent"
-              fgColor="var(--text-primary)"
-            />
-            <button
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: 13.5, fontWeight: 500, cursor: 'pointer', width: '100%', justifyContent: 'center' }}
-              onClick={() => {
-                const svg = document.getElementById('qr-modal-svg') as SVGElement | null
-                if (!svg) return
-                const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
-                const a = document.createElement('a')
-                a.href = URL.createObjectURL(blob)
-                a.download = `${qrLink.short_code}-qr.svg`
-                a.click()
-              }}
-            >
-              <Download size={13} /> Download SVG
-            </button>
+
+            {/* Content */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              {/* QR Code Preview */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ 
+                    width: '200px', 
+                    height: '200px', 
+                    border: '1px solid #e8e8e8', 
+                    borderRadius: '12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backgroundColor: '#fff'
+                  }}>
+                    <QRCodeSVG
+                      id="qr-modal-svg"
+                      value={`http://${qrLink.domain}/${qrLink.short_code}`}
+                      size={180}
+                      bgColor="transparent"
+                      fgColor={qrSettings.color}
+                    />
+                    {qrSettings.logo && (
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: '50%', 
+                        left: '50%', 
+                        transform: 'translate(-50%, -50%)',
+                        width: '40px',
+                        height: '40px',
+                        background: 'white',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: `2px solid ${qrSettings.color}`,
+                        fontSize: '20px',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        overflow: 'hidden',
+                        padding: '4px'
+                      }}>
+                        {qrSettings.logoUrl ? (
+                          <img 
+                            src={qrSettings.logoUrl} 
+                            alt="Logo" 
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'contain'
+                            }} 
+                          />
+                        ) : (
+                          '🔗'
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    color: '#666', 
+                    marginBottom: '12px', 
+                    fontFamily: "'Geist Mono', monospace",
+                    background: '#f5f5f5',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    display: 'inline-block'
+                  }}>
+                    {qrLink.domain}/{qrLink.short_code}
+                  </div>
+                  <button
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      padding: '8px 16px', 
+                      background: '#0a0a0a', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      fontSize: '13px', 
+                      fontWeight: '500', 
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    onClick={() => {
+                      const svg = document.getElementById('qr-modal-svg') as SVGElement | null
+                      if (!svg) return
+                      const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
+                      const a = document.createElement('a')
+                      a.href = URL.createObjectURL(blob)
+                      a.download = `${qrLink.short_code}-qr.svg`
+                      a.click()
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#333'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = '#0a0a0a'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  >
+                    <Download size={14} /> Download
+                  </button>
+                </div>
+              </div>
+
+              {/* Customization Options */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Logo Toggle */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <input
+                          type="checkbox"
+                          style={{
+                            appearance: 'none',
+                            width: '44px',
+                            height: '24px',
+                            background: qrSettings.logo ? '#0a0a0a' : '#e0e0e0',
+                            borderRadius: '99px',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s',
+                            outline: 'none'
+                          }}
+                          checked={qrSettings.logo}
+                          onChange={(e) => setQrSettings({ ...qrSettings, logo: e.target.checked })}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          width: '18px',
+                          height: '18px',
+                          background: 'white',
+                          borderRadius: '50%',
+                          top: '3px',
+                          left: qrSettings.logo ? '23px' : '3px',
+                          transition: 'transform 0.2s',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                          pointerEvents: 'none'
+                        }} />
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#0a0a0a' }}>Logo</span>
+                    </label>
+                  </div>
+                  
+                  {/* Logo Upload */}
+                  {qrSettings.logo && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '56px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        padding: '12px',
+                        background: '#f5f5f5',
+                        border: '1.5px solid #e0e0e0',
+                        borderRadius: '8px'
+                      }}>
+                        {qrSettings.logoUrl ? (
+                          <img 
+                            src={qrSettings.logoUrl} 
+                            alt="Logo" 
+                            style={{ 
+                              width: '40px', 
+                              height: '40px', 
+                              objectFit: 'contain',
+                              borderRadius: '6px',
+                              background: 'white',
+                              padding: '4px'
+                            }} 
+                          />
+                        ) : (
+                          <div style={{ 
+                            width: '40px', 
+                            height: '40px', 
+                            background: 'white',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '18px'
+                          }}>
+                            🔗
+                          </div>
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            style={{ display: 'none' }}
+                            id="logo-upload"
+                          />
+                          <label
+                            htmlFor="logo-upload"
+                            style={{
+                              display: 'inline-block',
+                              padding: '6px 12px',
+                              background: '#0a0a0a',
+                              color: 'white',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s',
+                              whiteSpace: 'nowrap'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = '#333' }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = '#0a0a0a' }}
+                          >
+                            {qrSettings.logoUrl ? 'Change logo' : 'Upload logo'}
+                          </label>
+                          {qrSettings.logoUrl && (
+                            <button
+                              style={{
+                                marginLeft: '8px',
+                                padding: '6px 12px',
+                                background: 'white',
+                                color: '#666',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s'
+                              }}
+                              onClick={() => setQrSettings({ ...qrSettings, logoUrl: undefined })}
+                              onMouseOver={(e) => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.borderColor = '#bbb'; e.currentTarget.style.color = '#0a0a0a' }}
+                              onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.color = '#666' }}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#888', marginLeft: '4px' }}>
+                        Upload a logo image (PNG, JPG recommended)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Selection */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#0a0a0a' }}>QR Code Color</label>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['#000000', '#1e40af', '#dc2626', '#059669', '#7c3aed', '#ea580c', '#0891b2', '#be123c'].map((presetColor) => (
+                      <button
+                        key={presetColor}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          border: qrSettings.color === presetColor ? '2px solid #0a0a0a' : '2px solid transparent',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          position: 'relative',
+                          backgroundColor: presetColor
+                        }}
+                        onClick={() => setQrSettings({ ...qrSettings, color: presetColor })}
+                        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)' }}
+                        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+                      >
+                        {qrSettings.color === presetColor && (
+                          <span style={{ 
+                            position: 'absolute', 
+                            top: '50%', 
+                            left: '50%', 
+                            transform: 'translate(-50%, -50%)', 
+                            color: 'white', 
+                            fontSize: '14px', 
+                            fontWeight: '600', 
+                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' 
+                          }}>
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <input
+                      type="text"
+                      style={{
+                        width: '100%',
+                        height: '36px',
+                        border: '1.5px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '0 12px',
+                        fontSize: '14px',
+                        fontFamily: "'Geist Mono', monospace",
+                        color: '#0a0a0a',
+                        transition: 'all 0.15s'
+                      }}
+                      placeholder="#000000"
+                      value={qrSettings.color}
+                      onChange={(e) => setQrSettings({ ...qrSettings, color: e.target.value })}
+                      maxLength={7}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = '#0a0a0a'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(10, 10, 10, 0.06)' }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = 'none' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              justifyContent: 'flex-end', 
+              padding: '20px 24px', 
+              borderTop: '1px solid #f0f0f0', 
+              background: '#fafafa' 
+            }}>
+              <button
+                style={{ 
+                  padding: '9px 20px', 
+                  borderRadius: '8px', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  border: '1.5px solid #e0e0e0',
+                  background: 'white',
+                  color: '#666'
+                }}
+                onClick={() => setQrLink(null)}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.borderColor = '#bbb'; e.currentTarget.style.color = '#0a0a0a' }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.color = '#666' }}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ 
+                  padding: '9px 20px', 
+                  borderRadius: '8px', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  border: 'none',
+                  background: '#0a0a0a',
+                  color: 'white'
+                }}
+                onClick={() => {
+                  const svg = document.getElementById('qr-modal-svg') as SVGElement | null
+                  if (!svg) return
+                  const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' })
+                  const a = document.createElement('a')
+                  a.href = URL.createObjectURL(blob)
+                  a.download = `${qrLink.short_code}-qr.svg`
+                  a.click()
+                  setQrLink(null)
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#333'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)' }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#0a0a0a'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                Save changes
+              </button>
+            </div>
           </div>
         </div>
       )}

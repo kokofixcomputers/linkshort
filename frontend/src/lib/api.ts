@@ -17,6 +17,8 @@ export const api = {
     req('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => req('/auth/logout', { method: 'POST' }),
   me: () => req('/auth/me'),
+  signup: (username: string, password: string) =>
+    req('/auth/signup', { method: 'POST', body: JSON.stringify({ username, password }) }),
 
   // Domains
   getDomains: () => req('/domains'),
@@ -26,7 +28,7 @@ export const api = {
   deleteDomain: (id: number) => req(`/domains/${id}`, { method: 'DELETE' }),
 
   // Links
-  getLinks: () => req('/links'),
+  getLinks: (view = 'own') => req(`/links?view=${view}`),
   createLink: (data: Record<string, unknown>) =>
     req('/links', { method: 'POST', body: JSON.stringify(data) }),
   updateLink: (id: number, data: Record<string, unknown>) =>
@@ -35,4 +37,11 @@ export const api = {
 
   // Analytics
   getAnalytics: (timeframe = '24h') => req(`/analytics?timeframe=${timeframe}`),
+
+  // Admin
+  getSettings: () => req('/admin/settings'),
+  updateSettings: (data: Record<string, unknown>) =>
+    req('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  getUsers: () => req('/admin/users'),
+  deleteUser: (id: number) => req(`/admin/users/${id}`, { method: 'DELETE' }),
 }

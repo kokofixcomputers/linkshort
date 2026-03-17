@@ -22,6 +22,44 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def migrate_db():
+    with get_db() as db:
+        # Add is_admin column to users table if it doesn't exist
+        try:
+            db.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+            db.commit()
+        except sqlite3.Error:
+            pass  # Column already exists
+        
+        # Update existing admin user to be admin
+        try:
+            db.execute("UPDATE users SET is_admin=1 WHERE username='admin'")
+            db.commit()
+        except sqlite3.Error:
+            pass
+        
+        # Create settings table if it doesn't exist
+        try:
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    key TEXT UNIQUE NOT NULL,
+                    value TEXT NOT NULL,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                )
+            """)
+            db.commit()
+        except sqlite3.Error:
+            pass
+        
+        # Seed default settings
+        try:
+            db.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('public_access', 'false')")
+            db.commit()
+        except sqlite3.Error:
+            pass
+
 def init_db():
     with get_db() as db:
         db.executescript('''
@@ -29,6 +67,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
+                is_admin INTEGER DEFAULT 0,
                 created_at TEXT DEFAULT (datetime('now'))
             );
 
@@ -77,12 +116,26 @@ def init_db():
                 ip TEXT DEFAULT '',
                 FOREIGN KEY (link_id) REFERENCES links(id)
             );
+
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
         ''')
 
         # Seed admin user
         pw = hashlib.sha256('admin'.encode()).hexdigest()
         try:
-            db.execute("INSERT OR IGNORE INTO users (username, password) VALUES ('admin', ?)", (pw,))
+            db.execute("INSERT OR IGNORE INTO users (username, password, is_admin) VALUES ('admin', ?, 1)", (pw,))
+        except:
+            pass
+
+        # Seed default settings
+        try:
+            db.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('public_access', 'false')")
         except:
             pass
 
@@ -96,6 +149,8 @@ def init_db():
 
         db.commit()
 
+# Run migrations first, then initialize
+migrate_db()
 init_db()
 
 def login_required(f):
@@ -103,6 +158,18 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+        with get_db() as db:
+            user = db.execute("SELECT is_admin FROM users WHERE id=?", (session['user_id'],)).fetchone()
+            if not user or not user['is_admin']:
+                return jsonify({'error': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated
 
@@ -139,7 +206,9 @@ def logout():
 @app.route('/api/auth/me', methods=['GET'])
 def me():
     if 'user_id' in session:
-        return jsonify({'username': session['username'], 'id': session['user_id']})
+        with get_db() as db:
+            user = db.execute("SELECT username, id, is_admin FROM users WHERE id=?", (session['user_id'],)).fetchone()
+            return jsonify(dict(user))
     return jsonify({'error': 'Not logged in'}), 401
 
 # Domains
@@ -195,8 +264,30 @@ def delete_domain(domain_id):
 @app.route('/api/links', methods=['GET'])
 @login_required
 def get_links():
+    view = request.args.get('view', 'own')  # 'own' or 'all'
+    
     with get_db() as db:
-        rows = db.execute("SELECT l.*, (SELECT COUNT(*) FROM clicks WHERE link_id=l.id) as click_count FROM links l WHERE l.user_id=? ORDER BY l.created_at DESC", (session['user_id'],)).fetchall()
+        # Check if user is admin
+        user = db.execute("SELECT is_admin FROM users WHERE id=?", (session['user_id'],)).fetchone()
+        is_admin = user and user['is_admin']
+        
+        if view == 'all' and is_admin:
+            # Admin can see all links
+            rows = db.execute("""
+                SELECT l.*, u.username, (SELECT COUNT(*) FROM clicks WHERE link_id=l.id) as click_count 
+                FROM links l 
+                JOIN users u ON l.user_id=u.id 
+                ORDER BY l.created_at DESC
+            """).fetchall()
+        else:
+            # Regular users or admin viewing own links
+            rows = db.execute("""
+                SELECT l.*, (SELECT COUNT(*) FROM clicks WHERE link_id=l.id) as click_count 
+                FROM links l 
+                WHERE l.user_id=? 
+                ORDER BY l.created_at DESC
+            """, (session['user_id'],)).fetchall()
+        
         return jsonify([dict(r) for r in rows])
 
 @app.route('/api/links', methods=['POST'])
@@ -309,6 +400,79 @@ def delete_link(link_id):
         db.commit()
         return jsonify({'success': True})
 
+# Admin Settings
+@app.route('/api/admin/settings', methods=['GET'])
+@admin_required
+def get_settings():
+    with get_db() as db:
+        rows = db.execute("SELECT key, value FROM settings").fetchall()
+        return jsonify({r['key']: r['value'] for r in rows})
+
+@app.route('/api/admin/settings', methods=['PUT'])
+@admin_required
+def update_settings():
+    data = request.json
+    with get_db() as db:
+        for key, value in data.items():
+            db.execute("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))", (key, value))
+        db.commit()
+        return jsonify({'success': True})
+
+# User Management
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def get_users():
+    with get_db() as db:
+        rows = db.execute("SELECT id, username, is_admin, created_at FROM users ORDER BY created_at DESC").fetchall()
+        return jsonify([dict(r) for r in rows])
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_user(user_id):
+    if user_id == session['user_id']:
+        return jsonify({'error': 'Cannot delete yourself'}), 400
+    with get_db() as db:
+        # Delete user's links and clicks
+        link_ids = db.execute("SELECT id FROM links WHERE user_id=?", (user_id,)).fetchall()
+        for link in link_ids:
+            db.execute("DELETE FROM clicks WHERE link_id=?", (link['id'],))
+        db.execute("DELETE FROM links WHERE user_id=?", (user_id,))
+        db.execute("DELETE FROM domains WHERE user_id=?", (user_id,))
+        db.execute("DELETE FROM users WHERE id=?", (user_id,))
+        db.commit()
+        return jsonify({'success': True})
+
+# Public Signup
+@app.route('/api/auth/signup', methods=['POST'])
+def signup():
+    if not is_public_access_enabled():
+        return jsonify({'error': 'Public signup is disabled'}), 403
+    
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    if len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters'}), 400
+    
+    pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    with get_db() as db:
+        try:
+            db.execute("INSERT INTO users (username, password, is_admin) VALUES (?, ?, 0)", (username, pw_hash))
+            db.commit()
+            return jsonify({'success': True})
+        except sqlite3.IntegrityError:
+            return jsonify({'error': 'Username already exists'}), 409
+
+def is_public_access_enabled():
+    with get_db() as db:
+        setting = db.execute("SELECT value FROM settings WHERE key='public_access'").fetchone()
+        return setting and setting['value'] == 'true'
+
 # Analytics
 @app.route('/api/analytics', methods=['GET'])
 @login_required
@@ -396,6 +560,11 @@ def get_analytics():
 
 @app.route('/passwordform')
 def password_form_page():
+    return send_from_directory(dist_path, 'index.html')
+
+@app.route('/app')
+@app.route('/app/<path:path>')
+def serve_app(path):
     return send_from_directory(dist_path, 'index.html')
 
 @app.route('/')
