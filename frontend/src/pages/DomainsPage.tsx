@@ -203,7 +203,7 @@ export default function DomainsPage() {
                     <span className="txt-step-num">1</span>
                     <div>
                       <strong>Add TXT record</strong>
-                      <p>In your DNS provider, add a TXT record for <code>_linkshort-verify</code></p>
+                      <p>In your DNS provider, add a TXT record for <code>_linkshort-verify{newDomain.includes('.') ? '.' + newDomain.split('.')[0] : ''}</code></p>
                     </div>
                   </div>
                   <div className="txt-step">
@@ -319,7 +319,7 @@ function DomainRow({
       </div>
 
       {showTxtInfo && (
-        <div className="public-access-info" style={{ width: '100%', marginTop: 10, flexBasis: '100%' }}>
+        <div className="public-access-info" style={{ marginTop: '12px' }}>
           <div className="info-header">
             <Info size={12} />
             <strong>TXT Record Verification</strong>
@@ -327,7 +327,7 @@ function DomainRow({
           <p>Add this TXT record to your DNS:</p>
           <div className="dns-record-block">
             <div>Type: <strong>TXT</strong></div>
-            <div>Name: <strong>_linkshort-verify</strong></div>
+            <div>Name: <strong>_linkshort-verify{domain.domain.includes('.') ? '.' + domain.domain.split('.')[0] : ''}</strong></div>
             <div>Value: <strong>linkshort-verify-{domain.domain}</strong></div>
           </div>
         </div>
