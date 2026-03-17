@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 import { Domain } from '../lib/types'
 import {
   Plus, Globe, CheckCircle2, AlertCircle, Trash2,
-  RefreshCw, ExternalLink, X, Info
+  RefreshCw, ExternalLink, X, Info, Settings, Copy
 } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 import './DomainsPage.css'
@@ -18,6 +18,8 @@ export default function DomainsPage() {
   const [addError, setAddError] = useState('')
   const [verifying, setVerifying] = useState<number | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; domain: string } | null>(null)
+  const [nginxConfig, setNginxConfig] = useState<{ domain: string; config: string } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -32,15 +34,12 @@ export default function DomainsPage() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    document.body.style.overflow = showAdd ? 'hidden' : ''
+    const anyOpen = showAdd || !!nginxConfig
+    document.body.style.overflow = anyOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [showAdd])
+  }, [showAdd, nginxConfig])
 
-  const closeAdd = () => {
-    setShowAdd(false)
-    setNewDomain('')
-    setAddError('')
-  }
+  const closeAdd = () => { setShowAdd(false); setNewDomain(''); setAddError('') }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,6 +90,31 @@ export default function DomainsPage() {
       alert(error.response?.data?.error || 'Failed to delete domain')
       setDeleteConfirm(null)
     }
+  }
+
+  const generateNginxConfig = (domain: string) => {
+    const currentDomain = window.location.origin
+    const config = `server {
+    listen 80;
+    server_name ${domain};
+
+    location / {
+        proxy_pass ${currentDomain};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}`
+    setNginxConfig({ domain, config })
+    setCopied(false)
+  }
+
+  const handleCopy = () => {
+    if (!nginxConfig) return
+    navigator.clipboard.writeText(nginxConfig.config)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -160,6 +184,7 @@ export default function DomainsPage() {
                       domain={d}
                       onVerify={handleVerify}
                       onDelete={handleDelete}
+                      onGenerateNginx={generateNginxConfig}
                       verifying={verifying === d.id}
                     />
                   ))}
@@ -170,33 +195,31 @@ export default function DomainsPage() {
         )}
       </div>
 
-      {/* Add domain modal — portalled to document.body */}
+      {/* Add domain modal */}
       {showAdd && createPortal(
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAdd(false) }}>
-          <div className="modal-card">
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeAdd() }}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">
-                <Globe size={18} />
+                <Globe size={16} />
                 Add Domain
               </div>
-              <button className="modal-close" onClick={() => setShowAdd(false)}>
-                <X size={15} />
+              <button className="modal-close" onClick={closeAdd}>
+                <X size={14} />
               </button>
             </div>
 
-            <div className="modal-body">
-              <form onSubmit={handleAdd}>
-                <div className="form-row" style={{ flexDirection: 'column', alignItems: 'stretch', marginBottom: '16px' }}>
-                  <label className="form-label">Domain</label>
-                  <input
-                    className="form-input"
-                    value={newDomain}
-                    onChange={e => setNewDomain(e.target.value)}
-                    placeholder="links.yourdomain.com"
-                    autoFocus
-                    required
-                  />
-                </div>
+            <form onSubmit={handleAdd} className="modal-form">
+              <div className="modal-body">
+                <label className="form-label">Domain</label>
+                <input
+                  className="form-input modal-input"
+                  value={newDomain}
+                  onChange={e => setNewDomain(e.target.value)}
+                  placeholder="links.yourdomain.com"
+                  autoFocus
+                  required
+                />
 
                 <div className="txt-instructions">
                   <div className="txt-step">
@@ -216,22 +239,22 @@ export default function DomainsPage() {
                   <div className="txt-step">
                     <span className="txt-step-num">3</span>
                     <div>
-                      <strong>Add & verify here</strong>
+                      <strong>Add &amp; verify here</strong>
                       <p>DNS propagation may take a few minutes.</p>
                     </div>
                   </div>
                 </div>
 
-                {addError && <div className="error-message">{addError}</div>}
+                {addError && <div className="error-message" style={{ marginTop: 12 }}>{addError}</div>}
+              </div>
 
-                <div className="modal-footer">
-                  <button type="button" className="cancel-btn" onClick={() => setShowAdd(false)}>Cancel</button>
-                  <button type="submit" className="create-user-btn" disabled={adding || !newDomain}>
-                    {adding ? <span className="btn-spinner-dark" /> : 'Add Domain'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="modal-footer">
+                <button type="button" className="cancel-btn" onClick={closeAdd}>Cancel</button>
+                <button type="submit" className="create-user-btn" disabled={adding || !newDomain}>
+                  {adding ? <span className="btn-spinner-dark" /> : 'Add Domain'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body
@@ -247,6 +270,44 @@ export default function DomainsPage() {
         onCancel={() => setDeleteConfirm(null)}
         dangerous
       />
+
+      {/* Nginx config modal */}
+      {nginxConfig && createPortal(
+        <div className="modal-overlay" onClick={() => setNginxConfig(null)}>
+          <div className="modal-card modal-card-wide" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">
+                <Settings size={16} />
+                Nginx Config — {nginxConfig.domain}
+              </div>
+              <button className="modal-close" onClick={() => setNginxConfig(null)}>
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p className="modal-description">
+                Add this configuration to your nginx server block to proxy requests through to LinkShort.
+              </p>
+              <br />
+              <pre className="code-block">{nginxConfig.config}</pre>
+            </div>
+
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setNginxConfig(null)}>
+                Close
+              </button>
+              <button className="create-user-btn" onClick={handleCopy}>
+                {copied
+                  ? <><CheckCircle2 size={13} /> Copied!</>
+                  : <><Copy size={13} /> Copy config</>
+                }
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
@@ -255,11 +316,13 @@ function DomainRow({
   domain,
   onVerify,
   onDelete,
+  onGenerateNginx,
   verifying,
 }: {
   domain: Domain
   onVerify: (id: number) => void
   onDelete: (id: number) => void
+  onGenerateNginx: (domain: string) => void
   verifying: boolean
 }) {
   const [showTxtInfo, setShowTxtInfo] = useState(false)
@@ -294,11 +357,10 @@ function DomainRow({
             {verifying ? <span className="btn-spinner-dark" /> : <><RefreshCw size={11} /> Verify</>}
           </button>
         )}
-        <button
-          className="delete-user-btn"
-          onClick={() => setShowTxtInfo(v => !v)}
-          title="Show TXT record info"
-        >
+        <button className="verify-btn" onClick={() => onGenerateNginx(domain.domain)} title="Generate nginx config">
+          <Settings size={11} /> Config
+        </button>
+        <button className="delete-user-btn" onClick={() => setShowTxtInfo(v => !v)} title="Show TXT record info">
           <Info size={13} />
         </button>
         <a
@@ -319,7 +381,7 @@ function DomainRow({
       </div>
 
       {showTxtInfo && (
-        <div className="public-access-info" style={{ marginTop: '12px' }}>
+        <div className="public-access-info" style={{ width: '100%', marginTop: 10, flexBasis: '100%' }}>
           <div className="info-header">
             <Info size={12} />
             <strong>TXT Record Verification</strong>

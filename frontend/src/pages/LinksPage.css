@@ -23,7 +23,7 @@
 .btn-primary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 7px 14px;
   background: var(--accent);
   color: var(--accent-text);

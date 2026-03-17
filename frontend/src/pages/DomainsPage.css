@@ -255,7 +255,6 @@
 }
 
 .form-input {
-  flex: 1;
   background: white;
   border: 1.5px solid #e0e0e0;
   border-radius: 8px;
@@ -264,6 +263,13 @@
   color: #0a0a0a;
   font-family: inherit;
   transition: border-color 0.15s;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+/* Inside .form-row, allow flex growth horizontally */
+.form-row .form-input {
+  flex: 1;
 }
 
 .form-input::placeholder {
@@ -276,7 +282,16 @@
   box-shadow: 0 0 0 3px rgba(10,10,10,0.06);
 }
 
+/* ── Modal input — full width, fixed height ── */
+.modal-input {
+  width: 100%;
+  flex: none;
+}
+
 .create-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: #0a0a0a;
   color: white;
   border: none;
@@ -289,8 +304,13 @@
   transition: all 0.18s;
 }
 
-.create-user-btn:hover {
+.create-user-btn:hover:not(:disabled) {
   background: #333;
+}
+
+.create-user-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .cancel-btn {
@@ -347,6 +367,7 @@
   border: 1.5px solid #f0f0f0;
   border-radius: 10px;
   transition: border-color 0.15s;
+  flex-wrap: wrap;
 }
 
 .user-item:hover {
@@ -420,17 +441,13 @@
   color: #aaa;
 }
 
-/* ── Domain user-item: allow flex-wrap for TXT info ── */
-.user-item {
-  flex-wrap: wrap;
-}
-
+/* ── Domain user-item: TXT info full width ── */
 .user-item > .public-access-info {
   width: 100%;
   flex-basis: 100%;
 }
 
-/* ── Verify button variant (pill, dark outline) ── */
+/* ── Verify button variant (pill, dark) ── */
 .verify-btn {
   display: inline-flex;
   align-items: center;
@@ -519,10 +536,14 @@
   padding: 24px;
   width: 100%;
   max-width: 460px;
+  max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
   animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   position: relative;
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 @keyframes modalIn {
@@ -535,6 +556,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -559,6 +581,7 @@
   color: #aaa;
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .modal-close:hover {
@@ -567,14 +590,29 @@
   border-color: #ccc;
 }
 
+/* ── Modal form — flex column so body scrolls and footer sticks ── */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Modal body — scrollable content area ── */
 .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
   margin-bottom: 20px;
+  display: block;
 }
 
 .modal-footer {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* ── TXT verification steps ── */
@@ -676,6 +714,34 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.modal-description {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Code block ── */
+.code-block {
+  background: #f8f9fa;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #333;
+  max-height: 400px;
+  margin: 0;
+}
+
+/* ── Wide modal card ── */
+.modal-card-wide {
+  max-width: 600px;
 }
 
 /* ── Responsive ── */

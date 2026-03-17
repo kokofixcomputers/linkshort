@@ -485,6 +485,35 @@
   color: #333;
 }
 
+/* ── Modal description ── */
+.modal-description {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Code block ── */
+.code-block {
+  background: #f8f9fa;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #333;
+  max-height: 400px;
+  margin: 0;
+}
+
+/* ── Wide modal card ── */
+.modal-card-wide {
+  max-width: 600px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .settings-page {
