@@ -1,0 +1,289 @@
+.analytics-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.analytics-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+}
+
+.analytics-body {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.metric-tabs-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  overflow: hidden;
+}
+
+.metric-tab {
+  flex: 1;
+  padding: 20px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.metric-tab:hover {
+  background: var(--surface-hover);
+}
+
+.metric-tab.active {
+  border-bottom: 2px solid var(--text-primary);
+}
+
+.metric-tab-indicator {
+  display: none;
+}
+
+.metric-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.metric-divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px 16px;
+  position: relative;
+}
+
+.chart-empty {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.analytics-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.card-header-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.card-tab {
+  padding: 0 2px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 14px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.card-tab:hover {
+  color: var(--text-secondary);
+}
+
+.card-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.card-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  padding-bottom: 12px;
+}
+
+.card-subtabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-subtab {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.card-subtab:hover {
+  color: var(--text-secondary);
+}
+
+.card-subtab.active {
+  background: var(--surface-hover);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.card-rows {
+  padding: 8px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 120px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+  position: relative;
+}
+
+.bar-row:hover {
+  background: var(--surface-hover);
+}
+
+.bar-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  min-width: 100px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  position: relative;
+  z-index: 1;
+}
+
+.bar-track {
+  flex: 1;
+  height: 24px;
+  background: transparent;
+  border-radius: 3px;
+  overflow: hidden;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  opacity: 0.6;
+}
+
+.bar-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.card-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+.timeframe-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+  animation: fadeIn 0.1s ease;
+}
+
+.timeframe-option {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+.timeframe-option:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.timeframe-option.active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+
