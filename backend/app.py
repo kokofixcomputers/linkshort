@@ -240,22 +240,52 @@ def add_domain():
 @app.route('/api/domains/<int:domain_id>/verify', methods=['POST'])
 @login_required
 def verify_domain(domain_id):
+    import dns.resolver
+    import dns.exception
+    
     with get_db() as db:
         domain = db.execute("SELECT * FROM domains WHERE id=?", (domain_id,)).fetchone()
         if not domain:
             return jsonify({'error': 'Not found'}), 404
-        # Simulate CNAME check
-        db.execute("UPDATE domains SET verified=1 WHERE id=?", (domain_id,))
-        db.commit()
-        return jsonify({'verified': True})
+        
+        try:
+            # Check for TXT record _linkshort-verify
+            expected_value = f"linkshort-verify-{domain['domain']}"
+            answers = dns.resolver.resolve(f"_linkshort-verify.{domain['domain']}", 'TXT')
+            
+            for rdata in answers:
+                txt_value = str(rdata).strip('"')
+                if txt_value == expected_value:
+                    # Mark as verified
+                    db.execute("UPDATE domains SET verified=1 WHERE id=?", (domain_id,))
+                    db.commit()
+                    return jsonify({'verified': True, 'message': 'Domain verified successfully'})
+            
+            return jsonify({'error': 'TXT record not found or incorrect value', 'expected': expected_value}), 400
+            
+        except dns.resolver.NXDOMAIN:
+            return jsonify({'error': 'Domain does not exist'}), 400
+        except dns.resolver.NoAnswer:
+            return jsonify({'error': f'TXT record _linkshort-verify not found for {domain["domain"]}', 'expected': expected_value}), 400
+        except dns.resolver.Timeout:
+            return jsonify({'error': 'DNS query timeout'}), 500
+        except Exception as e:
+            return jsonify({'error': f'DNS lookup failed: {str(e)}'}), 500
 
 @app.route('/api/domains/<int:domain_id>', methods=['DELETE'])
 @login_required
 def delete_domain(domain_id):
     with get_db() as db:
         domain = db.execute("SELECT * FROM domains WHERE id=?", (domain_id,)).fetchone()
-        if not domain or domain['is_system']:
-            return jsonify({'error': 'Cannot delete'}), 400
+        if not domain:
+            return jsonify({'error': 'Domain not found'}), 404
+        
+        # Check if this domain matches the current request host
+        request_host = request.host.split(':')[0]  # Remove port if present
+        if domain['domain'] == request_host:
+            return jsonify({'error': 'Cannot delete the domain you are currently using'}), 400
+        
+        # Allow deletion of all other domains (including system domains)
         db.execute("DELETE FROM domains WHERE id=?", (domain_id,))
         db.commit()
         return jsonify({'success': True})

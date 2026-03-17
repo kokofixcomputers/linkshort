@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { api } from '../lib/api'
 import { Domain } from '../lib/types'
 import {
   Plus, Globe, CheckCircle2, AlertCircle, Trash2,
   RefreshCw, ExternalLink, X, Info
 } from 'lucide-react'
+import ConfirmModal from '../components/ConfirmModal'
 import './DomainsPage.css'
 
 export default function DomainsPage() {
@@ -12,10 +14,10 @@ export default function DomainsPage() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [newDomain, setNewDomain] = useState('')
-  const [newCname, setNewCname] = useState('')
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState('')
   const [verifying, setVerifying] = useState<number | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; domain: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -29,16 +31,25 @@ export default function DomainsPage() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    document.body.style.overflow = showAdd ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showAdd])
+
+  const closeAdd = () => {
+    setShowAdd(false)
+    setNewDomain('')
+    setAddError('')
+  }
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     setAddError('')
     setAdding(true)
     try {
-      const d = await api.addDomain(newDomain.trim().toLowerCase(), newCname.trim())
+      const d = await api.addDomain(newDomain.trim().toLowerCase(), '')
       setDomains(prev => [...prev, d])
-      setNewDomain('')
-      setNewCname('')
-      setShowAdd(false)
+      closeAdd()
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : 'Failed to add domain')
     } finally {
@@ -51,78 +62,99 @@ export default function DomainsPage() {
     try {
       await api.verifyDomain(id)
       setDomains(prev => prev.map(d => d.id === id ? { ...d, verified: 1 } : d))
+    } catch (error: any) {
+      const errorData = error.response?.data || {}
+      const message = errorData.error || 'Verification failed'
+      if (errorData.expected) {
+        alert(`${message}\n\nExpected TXT record value:\n${errorData.expected}`)
+      } else {
+        alert(message)
+      }
     } finally {
       setVerifying(null)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Remove this domain?')) return
-    await api.deleteDomain(id)
-    setDomains(prev => prev.filter(d => d.id !== id))
+  const handleDelete = (id: number) => {
+    const domain = domains.find(d => d.id === id)
+    if (!domain) return
+    setDeleteConfirm({ id, domain: domain.domain })
   }
 
-  const systemDomains = domains.filter(d => d.is_system)
-  const userDomains = domains.filter(d => !d.is_system)
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    try {
+      await api.deleteDomain(deleteConfirm.id)
+      setDomains(prev => prev.filter(d => d.id !== deleteConfirm.id))
+      setDeleteConfirm(null)
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to delete domain')
+      setDeleteConfirm(null)
+    }
+  }
 
   return (
-    <div className="page-root">
-      <div className="page-header">
-        <h1 className="page-title">Domains</h1>
-        <button className="btn-primary" onClick={() => setShowAdd(true)}>
-          <Plus size={14} strokeWidth={2.5} />
-          Add domain
-        </button>
+    <div className="settings-page">
+      {/* Header */}
+      <div className="settings-header">
+        <div className="settings-title">
+          <Globe size={20} />
+          <h1>Domains</h1>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <p className="settings-subtitle">Manage custom domains for your short links</p>
+          <button className="add-user-btn" onClick={() => setShowAdd(true)}>
+            <Plus size={13} />
+            Add domain
+          </button>
+        </div>
       </div>
 
-      <div className="domains-body">
-        {/* CNAME info banner */}
-        <div className="info-banner">
-          <Info size={14} />
-          <div>
-            <strong>Custom domains via CNAME</strong> — Point your domain's CNAME record to{' '}
-            <code>cname.linkshort.io</code> then add it here. Verification checks your CNAME is set correctly.
+      <div className="settings-sections">
+        {/* Info card */}
+        <div className="settings-section">
+          <div className="section-header">
+            <Info size={14} />
+            <h2>Domain Verification</h2>
+          </div>
+          <div className="section-content">
+            <div className="public-access-info">
+              <div className="info-header">
+                <Info size={12} />
+                <strong>TXT Record Verification</strong>
+              </div>
+              <p>
+                Add a TXT record to your domain's DNS settings to verify ownership.
+                The verification process checks that the TXT record contains the correct value.
+              </p>
+            </div>
           </div>
         </div>
 
+        {/* Domain list */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+          <div className="settings-loading">
             <div className="spinner" />
+            <span style={{ marginLeft: 10 }}>Loading domains…</span>
           </div>
         ) : (
-          <>
-            {/* System/default domains */}
-            {systemDomains.length > 0 && (
-              <div className="domain-section">
-                <h2 className="domain-section-title">Default Domains</h2>
-                <div className="domains-list">
-                  {systemDomains.map(d => (
-                    <DomainRow
-                      key={d.id}
-                      domain={d}
-                      onVerify={handleVerify}
-                      onDelete={handleDelete}
-                      verifying={verifying === d.id}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* User domains */}
-            <div className="domain-section">
-              <h2 className="domain-section-title">Custom Domains</h2>
-              {userDomains.length === 0 ? (
-                <div className="domains-empty">
+          <div className="settings-section">
+            <div className="section-header">
+              <Globe size={14} />
+              <h2>Domain List</h2>
+            </div>
+            <div className="section-content">
+              {domains.length === 0 ? (
+                <div className="users-empty">
                   <Globe size={32} strokeWidth={1.5} />
-                  <p>No custom domains added yet.</p>
-                  <button className="btn-primary" onClick={() => setShowAdd(true)}>
+                  <p>No domains added yet.</p>
+                  <button className="add-user-btn" onClick={() => setShowAdd(true)}>
                     <Plus size={13} /> Add your first domain
                   </button>
                 </div>
               ) : (
-                <div className="domains-list">
-                  {userDomains.map(d => (
+                <div className="users-list">
+                  {domains.map(d => (
                     <DomainRow
                       key={d.id}
                       domain={d}
@@ -134,84 +166,87 @@ export default function DomainsPage() {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
 
-      {/* Add domain modal */}
-      {showAdd && (
+      {/* Add domain modal — portalled to document.body */}
+      {showAdd && createPortal(
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAdd(false) }}>
-          <div className="add-domain-modal animate-fade">
+          <div className="modal-card">
             <div className="modal-header">
-              <h3 className="modal-title">Add Custom Domain</h3>
-              <button className="icon-btn" onClick={() => setShowAdd(false)}><X size={15} /></button>
+              <div className="modal-title">
+                <Globe size={18} />
+                Add Domain
+              </div>
+              <button className="modal-close" onClick={() => setShowAdd(false)}>
+                <X size={15} />
+              </button>
             </div>
 
-            <form onSubmit={handleAdd} className="add-domain-form">
-              <div className="form-section">
-                <label className="form-label">Domain</label>
-                <input
-                  className="form-input"
-                  value={newDomain}
-                  onChange={e => setNewDomain(e.target.value)}
-                  placeholder="links.yourdomain.com"
-                  autoFocus
-                  required
-                />
-                <p className="field-hint">Enter the subdomain or apex domain you want to use for short links.</p>
-              </div>
-
-              <div className="form-section">
-                <label className="form-label">CNAME Target <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
-                <input
-                  className="form-input"
-                  value={newCname}
-                  onChange={e => setNewCname(e.target.value)}
-                  placeholder="cname.linkshort.io"
-                />
-                <p className="field-hint">Add a CNAME record in your DNS pointing to this target.</p>
-              </div>
-
-              <div className="cname-instructions">
-                <div className="cname-step">
-                  <span className="cname-step-num">1</span>
-                  <div>
-                    <strong>Go to your DNS provider</strong>
-                    <p>Namecheap, Cloudflare, GoDaddy, etc.</p>
-                  </div>
+            <div className="modal-body">
+              <form onSubmit={handleAdd}>
+                <div className="form-row" style={{ flexDirection: 'column', alignItems: 'stretch', marginBottom: '16px' }}>
+                  <label className="form-label">Domain</label>
+                  <input
+                    className="form-input"
+                    value={newDomain}
+                    onChange={e => setNewDomain(e.target.value)}
+                    placeholder="links.yourdomain.com"
+                    autoFocus
+                    required
+                  />
                 </div>
-                <div className="cname-step">
-                  <span className="cname-step-num">2</span>
-                  <div>
-                    <strong>Add a CNAME record</strong>
-                    <div className="cname-example">
-                      <span>Type: <code>CNAME</code></span>
-                      <span>Name: <code>{newDomain ? newDomain.split('.')[0] : 'links'}</code></span>
-                      <span>Target: <code>cname.linkshort.io</code></span>
+
+                <div className="txt-instructions">
+                  <div className="txt-step">
+                    <span className="txt-step-num">1</span>
+                    <div>
+                      <strong>Add TXT record</strong>
+                      <p>In your DNS provider, add a TXT record for <code>_linkshort-verify</code></p>
+                    </div>
+                  </div>
+                  <div className="txt-step">
+                    <span className="txt-step-num">2</span>
+                    <div>
+                      <strong>Set verification value</strong>
+                      <p>Value: <code>linkshort-verify-{newDomain || 'yourdomain'}</code></p>
+                    </div>
+                  </div>
+                  <div className="txt-step">
+                    <span className="txt-step-num">3</span>
+                    <div>
+                      <strong>Add & verify here</strong>
+                      <p>DNS propagation may take a few minutes.</p>
                     </div>
                   </div>
                 </div>
-                <div className="cname-step">
-                  <span className="cname-step-num">3</span>
-                  <div>
-                    <strong>Add & verify here</strong>
-                    <p>DNS propagation may take up to 48 hours.</p>
-                  </div>
+
+                {addError && <div className="error-message">{addError}</div>}
+
+                <div className="modal-footer">
+                  <button type="button" className="cancel-btn" onClick={() => setShowAdd(false)}>Cancel</button>
+                  <button type="submit" className="create-user-btn" disabled={adding || !newDomain}>
+                    {adding ? <span className="btn-spinner-dark" /> : 'Add Domain'}
+                  </button>
                 </div>
-              </div>
-
-              {addError && <div className="form-error">{addError}</div>}
-
-              <div className="modal-footer-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-                <button type="submit" className="btn-create" disabled={adding || !newDomain}>
-                  {adding ? <span className="btn-spinner-dark" /> : 'Add Domain'}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        title="Remove Domain"
+        message={`Are you sure you want to remove "${deleteConfirm?.domain}"? This action cannot be undone.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        dangerous
+      />
     </div>
   )
 }
@@ -227,68 +262,76 @@ function DomainRow({
   onDelete: (id: number) => void
   verifying: boolean
 }) {
+  const [showTxtInfo, setShowTxtInfo] = useState(false)
+  const isCurrentDomain = domain.domain === window.location.hostname
+
   return (
-    <div className="domain-row">
-      <div className="domain-icon">
-        <Globe size={16} />
+    <div className="user-item" style={{ flexWrap: 'wrap' }}>
+      <div className="user-info">
+        <div className="user-name">
+          <Globe size={14} />
+          {domain.domain}
+          {isCurrentDomain && <span className="domain-current-badge">Current</span>}
+        </div>
+        <div className="user-meta" style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+          {domain.verified ? (
+            <>
+              <CheckCircle2 size={11} style={{ color: '#16a34a' }} />
+              <span style={{ color: '#16a34a' }}>Verified</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle size={11} style={{ color: '#ea580c' }} />
+              <span style={{ color: '#ea580c' }}>Pending verification</span>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="domain-info">
-        <div className="domain-name">{domain.domain}</div>
-        {domain.cname_target && (
-          <div className="domain-cname">
-            CNAME → <code>{domain.cname_target}</code>
-          </div>
-        )}
-        {domain.is_system ? (
-          <span className="domain-badge system">System</span>
-        ) : null}
-      </div>
-
-      <div className="domain-status">
-        {domain.verified ? (
-          <span className="status-verified">
-            <CheckCircle2 size={13} />
-            Verified
-          </span>
-        ) : (
-          <span className="status-pending">
-            <AlertCircle size={13} />
-            Pending
-          </span>
-        )}
-      </div>
-
-      <div className="domain-actions">
-        {!domain.verified && !domain.is_system && (
-          <button
-            className="btn-verify"
-            onClick={() => onVerify(domain.id)}
-            disabled={verifying}
-            title="Check CNAME and verify"
-          >
-            {verifying ? <span className="mini-spinner" /> : <><RefreshCw size={12} /> Verify</>}
+      <div className="user-actions">
+        {!domain.verified && (
+          <button className="verify-btn" onClick={() => onVerify(domain.id)} disabled={verifying}>
+            {verifying ? <span className="btn-spinner-dark" /> : <><RefreshCw size={11} /> Verify</>}
           </button>
         )}
+        <button
+          className="delete-user-btn"
+          onClick={() => setShowTxtInfo(v => !v)}
+          title="Show TXT record info"
+        >
+          <Info size={13} />
+        </button>
         <a
           href={`http://${domain.domain}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="icon-btn"
+          className="delete-user-btn"
           title="Open domain"
+          style={{ textDecoration: 'none' }}
         >
           <ExternalLink size={13} />
         </a>
-        {!domain.is_system && (
-          <button
-            className="icon-btn danger-btn"
-            onClick={() => onDelete(domain.id)}
-            title="Remove domain"
-          >
+        {!isCurrentDomain && (
+          <button className="delete-user-btn" onClick={() => onDelete(domain.id)} title="Remove domain">
             <Trash2 size={13} />
           </button>
         )}
       </div>
+
+      {showTxtInfo && (
+        <div className="public-access-info" style={{ width: '100%', marginTop: 10, flexBasis: '100%' }}>
+          <div className="info-header">
+            <Info size={12} />
+            <strong>TXT Record Verification</strong>
+          </div>
+          <p>Add this TXT record to your DNS:</p>
+          <div className="dns-record-block">
+            <div>Type: <strong>TXT</strong></div>
+            <div>Name: <strong>_linkshort-verify</strong></div>
+            <div>Value: <strong>linkshort-verify-{domain.domain}</strong></div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
